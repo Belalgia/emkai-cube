@@ -1,0 +1,85 @@
+    :root{
+      --cols: 9;
+      --rows: 9;
+      --gap: 6px;               /* Abstand zwischen Kacheln */
+      --perspective: 900px;     /* Perspektive Tiefe */
+      --base-tilesize: 44vmin;  /* Ausgangsgröße (skaliert mit Viewport) */
+      --max-tilesize: 520px;    /* max Breite */
+      --tile-size: clamp(28px, calc(var(--base-tilesize) / var(--cols)), var(--max-tilesize));
+      --board-translate-y: 6vh;
+      --rotateX: 55deg;         /* voreingestellte Ansicht */
+      --rotateY: -15deg;
+    }
+
+    /* Page layout */
+    html,body{height:100%; margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background: linear-gradient(180deg,#071126 0%, #081428 60%); color:#fff;}
+    .wrap{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:clamp(12px,4vw,28px);} 
+
+    /* Board container */
+    .board-viewport{
+      width: min(98vw, 960px);
+      max-width: 98vw;
+      perspective: var(--perspective);
+      touch-action: none; /* für Pointer Drag */
+    }
+
+    .board{
+      width: calc(var(--tile-size) * var(--cols) + (var(--cols) - 1) * var(--gap));
+      height: calc(var(--tile-size) * var(--rows) + (var(--rows) - 1) * var(--gap));
+      transform-style: preserve-3d;
+      transform: translateY(var(--board-translate-y)) rotateX(var(--rotateX)) rotateZ(0deg) rotateY(var(--rotateY));
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(var(--cols), 1fr);
+      grid-template-rows: repeat(var(--rows), 1fr);
+      gap: var(--gap);
+      will-change: transform;
+    }
+
+    /* Individual tile */
+    .tile{
+      width: var(--tile-size);
+      height: var(--tile-size);
+      display:block;
+      position:relative;
+      border-radius: 8px;
+      cursor: pointer;
+      transform-style: preserve-3d;
+      transition: transform 180ms cubic-bezier(.2,.8,.2,1), box-shadow 180ms;
+      user-select: none;
+    }
+
+    /* 3D appearance using pseudo-elements for a top + right/left bevel */
+    .tile .top{
+      position:absolute; inset:0; border-radius:8px; background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.05));
+      box-shadow: 0 6px 18px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.03);
+      transform: translateZ(14px);
+      display:flex; align-items:center; justify-content:center; font-weight:600; font-size: calc(var(--tile-size) * 0.22);
+      color: #e7eefb;
+      letter-spacing: .02em;
+    }
+
+    .tile .side-right{
+      position:absolute; right:-7px; top:0; width:14px; height:100%; border-radius:0 8px 8px 0; background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.28)); transform: translateZ(7px) rotateY(-90deg) translateX(7px);
+    }
+    .tile .side-left{
+      position:absolute; left:-7px; top:0; width:14px; height:100%; border-radius:8px 0 0 8px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.14)); transform: translateZ(7px) rotateY(90deg) translateX(-7px);
+    }
+
+    /* colors: checkerboard pattern using nth-child */
+    .tile:nth-child(2n) .top{ background: linear-gradient(180deg,#9ad1ff 0%, #5aa6ff 100%); }
+    .tile:nth-child(2n+1) .top{ background: linear-gradient(180deg,#ffffff 0%, #d6e9ff 100%); }
+
+    /* Hover / active / touch states */
+    .tile:active, .tile.pressed{ transform: translateZ(10px) translateY(-6px); box-shadow: 0 18px 32px rgba(2,6,23,0.6); }
+    .tile:hover{ transform: translateZ(6px) translateY(-3px); }
+
+    /* Small screens adjustments */
+    @media (max-width:420px){
+      :root{ --base-tilesize: 82vmin; --gap:5px; --rotateX: 65deg; --rotateY:-10deg; }
+      .tile .top{ font-size: calc(var(--tile-size) * 0.18); }
+    }
+
+    /* Controls overlay */
+    .info{ position: absolute; left:12px; top:12px; background: rgba(255,255,255,0.04); padding:8px 12px; border-radius:10px; font-size:13px; }
+    .footer{ margin-top:14px; text-align:center; font-size:13px; opacity:0.85 }
