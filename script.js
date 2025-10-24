@@ -1,70 +1,70 @@
-    const cols = 9, rows = 9;
-    const board = document.getElementById('board');
+const cols = 9, rows = 9;
+const root = document.documentElement;
+const board = document.getElementById('board');
+const viewport = document.getElementById('viewport');
 
-    // generate tiles
-    for(let r=0;r<rows;r++){
-      for(let c=0;c<cols;c++){
-        const idx = r*cols + c + 1;
-        const t = document.createElement('button');
-        t.className = 'tile';
-        t.setAttribute('data-row', r);
-        t.setAttribute('data-col', c);
-        t.setAttribute('aria-label', `Feld ${r+1}-${c+1}`);
-        t.innerHTML = `<span class="top">${idx}</span><span class="side-right"></span><span class="side-left"></span>`;
-        t.addEventListener('pointerdown', e=>{ t.classList.add('pressed'); });
-        t.addEventListener('pointerup', e=>{ t.classList.remove('pressed'); });
-        t.addEventListener('pointercancel', e=>{ t.classList.remove('pressed'); });
-        board.appendChild(t);
-      }
-    }
+// Würfel generieren
+for (let r = 0; r < rows; r++) {
+  for (let c = 0; c < cols; c++) {
+    const t = document.createElement('button');
+    t.className = 'tile';
+    t.innerHTML = `
+      <div class="face front"></div>
+      <div class="face back"></div>
+      <div class="face left"></div>
+      <div class="face right"></div>
+      <div class="face top"></div>
+      <div class="face bottom"></div>
+    `;
+    t.addEventListener('click', () => t.classList.toggle('stretched'));
+    board.appendChild(t);
+  }
+}
 
-    // Pointer drag to rotate board (works with mouse & touch)
-    const viewport = document.getElementById('viewport');
-    let dragging=false, lastX=0, lastY=0;
-    const root = document.documentElement;
+// Responsive Board
+function fitBoard() {
+  const vw = viewport.clientWidth - 24;
+  const vh = viewport.clientHeight - 24;
+  const gap = parseInt(getComputedStyle(root).getPropertyValue('--gap')) || 6;
+  const maxW = (vw - (cols - 1) * gap) / cols;
+  const maxH = (vh - (rows - 1) * gap) / rows;
+  const tile = Math.min(maxW, maxH);
+  root.style.setProperty('--tile-size', tile + 'px');
+  board.style.width = `calc(var(--tile-size) * ${cols} + ${gap}px * (${cols}-1))`;
+  board.style.height = `calc(var(--tile-size) * ${rows} + ${gap}px * (${rows}-1))`;
+}
+window.addEventListener('resize', fitBoard);
+fitBoard();
 
-    viewport.addEventListener('pointerdown', (e)=>{
-      dragging = true;
-      lastX = e.clientX; lastY = e.clientY;
-      viewport.setPointerCapture(e.pointerId);
-    });
+// Kippsteuerung (X-Achse)
+let dragging = false, lastY = 0;
+viewport.addEventListener('pointerdown', e => {
+  dragging = true;
+  lastY = e.clientY;
+  viewport.setPointerCapture(e.pointerId);
+});
+viewport.addEventListener('pointermove', e => {
+  if (!dragging) return;
+  const dy = e.clientY - lastY;
+  lastY = e.clientY;
+  const cur = parseFloat(getComputedStyle(root).getPropertyValue('--rotateX')) || 0;
+  let next = cur - dy * 0.2;
+  const max = parseFloat(getComputedStyle(root).getPropertyValue('--max-tilt')) || 60;
+  const min = parseFloat(getComputedStyle(root).getPropertyValue('--min-tilt')) || 0;
+  next = Math.max(min, Math.min(max, next));
+  root.style.setProperty('--rotateX', next + 'deg');
+  board.style.transform = `rotateX(${next}deg)`;
+});
+viewport.addEventListener('pointerup', e => { dragging = false; try { viewport.releasePointerCapture(e.pointerId); } catch (_) {} });
+viewport.addEventListener('pointercancel', () => { dragging = false; });
 
-    viewport.addEventListener('pointermove', (e)=>{
-      if(!dragging) return;
-      const dx = e.clientX - lastX;
-      const dy = e.clientY - lastY;
-      lastX = e.clientX; lastY = e.clientY;
-
-      // adjust rotation variables smoothly
-      const curX = parseFloat(getComputedStyle(root).getPropertyValue('--rotateX')) || 55;
-      const curY = parseFloat(getComputedStyle(root).getPropertyValue('--rotateY')) || -15;
-      // invert dy to make drag feel natural
-      const nextX = Math.min(85, Math.max(15, curX - dy*0.15));
-      const nextY = Math.min(60, Math.max(-60, curY + dx*0.18));
-      root.style.setProperty('--rotateX', nextX + 'deg');
-      root.style.setProperty('--rotateY', nextY + 'deg');
-    });
-
-    viewport.addEventListener('pointerup', (e)=>{ dragging=false; try{ viewport.releasePointerCapture(e.pointerId);}catch(e){} });
-    viewport.addEventListener('pointercancel', ()=>{ dragging=false; });
-
-    // double tap to reset
-    let lastTap = 0;
-    viewport.addEventListener('pointerup', function(e){
-      const now = Date.now();
-      if(now - lastTap < 300){
-        // reset
-        root.style.setProperty('--rotateX', '55deg');
-        root.style.setProperty('--rotateY', '-15deg');
-      }
-      lastTap = now;
-    });
-
-    // make grid responsive: adjust tile-size base on viewport width with JS fallback
-    function recalc(){
-      const vw = Math.min(window.innerWidth, 960);
-      const base = Math.min(520, (vw - 40) );
-      document.documentElement.style.setProperty('--base-tilesize', base + 'px');
-    }
-    window.addEventListener('resize', recalc);
-    recalc();
+// Doppeltipp Reset
+let lastTap = 0;
+viewport.addEventListener('pointerup', e => {
+  const now = Date.now();
+  if (now - lastTap < 300) {
+    root.style.setProperty('--rotateX', '0deg');
+    board.style.transform = 'rotateX(0deg)';
+  }
+  lastTap = now;
+});
