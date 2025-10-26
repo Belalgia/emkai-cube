@@ -1,18 +1,240 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>9x9 3D Spielbrett — Würfel Stretch</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Board – Mitternachtsschnee</title>
+  <style>
+    :root {
+      --board-size: 9;
+      --tile-gap: 4px;
+      --tilt-start: 90deg;
+      --tilt-end: 20deg;
+      --anim-duration: 2000ms;
+      --accent: #ff4655;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      perspective: 1200px;
+      color: #f8f8f8;
+      background: linear-gradient(to bottom, #081226 0%, #0e1a3a 35%, #0b0f1e 100%);
+      overflow: hidden;
+    }
+
+    /* ❄️ Schneefall-Kreise im oberen Drittel */
+    .snow-container {
+      position: fixed;
+      top: 0; left: 0; right: 0; height: 35vh;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .snowflake {
+      position: absolute;
+      top: -10px;
+      background: white;
+      border-radius: 50%;
+      opacity: 0.8;
+      animation: fall linear forwards;
+    }
+
+    @keyframes fall {
+      0% { transform: translateY(0); opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(35vh); opacity: 0; }
+    }
+
+    .santaWrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 1dvh 2dvw;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 0 15px rgba(255,255,255,0.1);
+      width: 90%;
+      max-width: 600px;
+      z-index: 2;
+    }
+
+    .speechBubble {
+      position: relative;
+      background: rgba(255,255,255,0.15);
+      border: 2px solid rgba(255,255,255,0.4);
+      border-radius: 16px;
+      padding: 1dvh 1.5dvw;
+      margin: 0 0 1dvh 0;
+      font-size: clamp(12px, 2.5vw, 18px);
+      line-height: 1.35;
+      color: #fff;
+      min-height: 2.5em;
+      max-width: 70%;
+      opacity: 0;
+      transition: opacity .8s ease;
+      text-shadow: 0 0 8px rgba(255,255,255,0.4);
+    }
+    .speechBubble::after, .speechBubble::before {
+      content:""; position:absolute; bottom:-18px; left:50%; transform:translateX(-50%);
+      border:9px solid transparent; border-top-color:rgba(255,255,255,0.4);
+    }
+    .speechBubble::before {
+      bottom:-14px; border-top-color:rgba(255,255,255,0.15);
+    }
+
+    .santaWrap img {
+      width: clamp(80px, 25vmin, 180px);
+      height:auto;
+      display:block;
+      filter: drop-shadow(0 0 10px rgba(255,255,255,0.4));
+    }
+
+   .board3d {
+  width: 90vmin;
+  height: 55dvh;
+  max-width: 90vmin;
+  max-height: 55dvh;
+  perspective: 1200px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-3dvh);
+  margin-bottom: 4dvh; /* 👈 Abstand unten zum Fensterrand */
+}
+
+/* Optional: auf kleinen Bildschirmen etwas mehr Luft */
+@media (max-width: 600px) {
+  :root { --tilt-end: 10deg; }
+  .board3d {
+    transform: translateY(-4dvh);
+    margin-bottom: 6dvh;
+  }
+}
+
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(var(--board-size), 1fr);
+      grid-template-rows: repeat(var(--board-size), 1fr);
+      gap: var(--tile-gap);
+      width: 100%;
+      height: 100%;
+      background: rgba(255,255,255,0.08);
+      border: 2px solid rgba(255,255,255,0.25);
+      border-radius: 12px;
+      transform-style: preserve-3d;
+      transform-origin: center;
+      transform: rotateX(var(--tilt-start));
+      animation: tiltIn var(--anim-duration) ease-out forwards;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.45);
+    }
+
+    @keyframes tiltIn {
+      from { transform: rotateX(var(--tilt-start)); }
+      to   { transform: rotateX(var(--tilt-end)); }
+    }
+
+    .tile {
+      position: relative;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      display: grid; place-items: center;
+    }
+
+    .tile.center {
+      outline: 3px dashed var(--accent);
+      outline-offset: -3px;
+      background: rgba(255,70,85,0.4);
+    }
+  </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="board-viewport" id="viewport">
-      <div class="board" id="board"></div>
-      <div class="info">Ziehe nach oben/unten zum Kippen • Klick auf Würfel zum Strecken • Doppeltipp = Reset</div>
-    </div>
+  <div class="snow-container" id="snow"></div>
+
+  <div class="santaWrap">
+    <p class="speechBubble" id="speechBubble">Willkommen, Sterblicher. Die Mitternacht ist still, und der Schnee tanzt … 🎅</p>
+    <img id="santaImg" src="assets/opponent/santa1.png" alt="Santa Gegner" />
   </div>
-  <script src="script.js"></script>
+
+  <div class="board3d">
+    <div id="board" aria-label="Spielfeld"></div>
+  </div>
+
+  <script>
+    class Tile {
+      constructor(x, y, isCenter=false) {
+        this.x = x; this.y = y; this.isCenter = isCenter;
+        this.el = document.createElement('div');
+        this.el.className = 'tile';
+        if (isCenter) this.el.classList.add('center');
+      }
+    }
+
+    class Board {
+      constructor(size=9) {
+        if (size % 2 === 0) throw new Error('Board size must be odd');
+        this.size = size;
+        this.center = Math.floor(size/2);
+        this.el = document.getElementById('board');
+        this.el.style.setProperty('--board-size', String(size));
+        for (let y=0; y<size; y++){
+          for (let x=0; x<size; x++){
+            const t = new Tile(x,y, x===this.center && y===this.center);
+            this.el.appendChild(t.el);
+          }
+        }
+      }
+    }
+
+    function typeWriter(el, text, speed=30){
+      el.textContent = '';
+      el.style.opacity = '1';
+      let i=0; (function tick(){ if(i<text.length){ el.textContent += text[i++]; setTimeout(tick, speed); } })();
+    }
+
+    function createSnowflakes(container, count=40){
+      for(let i=0;i<count;i++){
+        const flake = document.createElement('div');
+        flake.classList.add('snowflake');
+        const size = Math.random()*4+2;
+        flake.style.width = `${size}px`;
+        flake.style.height = `${size}px`;
+        flake.style.left = `${Math.random()*100}%`;
+        flake.style.animationDuration = `${5+Math.random()*5}s`;
+        flake.style.animationDelay = `${Math.random()*5}s`;
+        container.appendChild(flake);
+        flake.addEventListener('animationend', ()=>{
+          container.removeChild(flake);
+          createSnowflakes(container,1);
+        });
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const board = new Board(9);
+      const bubble = document.getElementById('speechBubble');
+      const fullText = bubble.textContent.trim();
+      bubble.textContent = '';
+      document.getElementById('board').addEventListener('animationend', () => {
+        typeWriter(bubble, fullText, 30);
+      }, { once:true });
+      createSnowflakes(document.getElementById('snow'));
+    });
+  </script>
 </body>
 </html>
