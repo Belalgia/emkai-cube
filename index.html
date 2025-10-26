@@ -3,28 +3,28 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>3D Board – Mitternachtsschnee</title>
+<title>3D Board – Santa Frost</title>
 <style>
 :root {
   --board-size: 9;
   --tile-gap: 4px;
   --tilt-start: 90deg;
-  --tilt-end: 20deg;
+  --tilt-end: 18deg;
   --anim-duration: 2000ms;
 }
-*{box-sizing:border-box}
-body{
-  margin:0;
-  height:100dvh;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-  perspective:1200px;
-  color:#f8f8f8;
-  background:linear-gradient(to bottom,#081226 0%,#0e1a3a 35%,#0b0f1e 100%);
-  overflow:hidden;
+*{box-sizing:border-box;margin:0;padding:0;}
+body {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* war space-between -> entfernt den Abstand */
+  align-items: center;
+  background: linear-gradient(to bottom,#081226 0%,#0e1a3a 35%,#0b0f1e 100%);
+  color: #fff;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  overflow: hidden;
+  perspective: 1200px;
+  padding: 1dvh 0;
 }
 
 /* ❄️ Schneefall */
@@ -32,138 +32,145 @@ body{
 .snowflake{position:absolute;top:-10px;background:white;border-radius:50%;opacity:.8;animation:fall linear forwards;}
 @keyframes fall{0%{transform:translateY(0);opacity:1;}100%{transform:translateY(35vh);opacity:0;}}
 
-/* === Santa & Sprechblase === */
-.santaWrap{
-  position:relative;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:flex-start;
-  text-align:center;
-  width:90%;
-  max-width:600px;
-  padding:3dvh 0 2dvh;
-  border:2px solid rgba(255,255,255,0.3);
-  border-radius:12px;
-  background:rgba(255,255,255,0.08);
-  backdrop-filter:blur(6px);
-  box-shadow:0 0 15px rgba(255,255,255,0.1);
-  z-index:2;
-  flex-shrink:0;
+/* === Santa & UI === */
+.santaWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1dvh; /* etwas enger zusammen */
+  z-index: 2;
+  flex-shrink: 0;
+  margin-top: 0.5dvh; /* fast kein Abstand oben */
+  margin-bottom: 0.5dvh; /* minimaler Puffer zum Board */
 }
+
 .speechBubble{
-  position:relative;
-  background:rgba(255,255,255,0.15);
-  border:2px solid rgba(255,255,255,0.4);
+  background:rgba(255,255,255,0.12);
+  border:1.5px solid rgba(255,255,255,0.3);
   border-radius:16px;
   padding:1dvh 2dvw;
-  margin-bottom:2dvh;
-  font-size:clamp(12px,2.5vw,18px);
+  font-size:clamp(12px,2.3vw,18px);
   line-height:1.4;
-  color:#fff;
-  width:85%;
-  height:4.8em; /* Fixe Höhe für 2–3 Zeilen */
-  overflow:hidden;
+  width:min(85vw,600px);
+  height:4.8em;
   text-align:center;
-  text-shadow:0 0 8px rgba(255,255,255,0.4);
-  box-shadow:0 0 10px rgba(255,255,255,0.2);
+  text-shadow:0 0 6px rgba(255,255,255,0.3);
+  overflow:hidden;
   opacity:0;
   transition:opacity .8s ease;
   display:flex;
   align-items:center;
   justify-content:center;
+  box-shadow:0 0 8px rgba(255,255,255,0.1);
+  margin-bottom:1dvh;
 }
-.speechBubble::after,.speechBubble::before{
-  content:"";
-  position:absolute;
-  bottom:-18px;
-  left:50%;
-  transform:translateX(-50%);
-  border:9px solid transparent;
-  border-top-color:rgba(255,255,255,0.4);
-}
-.speechBubble::before{bottom:-14px;border-top-color:rgba(255,255,255,0.15);}
-.santaWrap img{width:clamp(100px,25vmin,220px);height:auto;display:block;filter:drop-shadow(0 0 10px rgba(255,255,255,0.4));}
-
-/* === Würfel === */
-.santaPieces {
-  position:absolute;
-  top:55%;
-  width:100%;
-  opacity:0;
-  transform:scale(0.6);
-  transition:opacity 1.5s ease, transform 1.5s ease;
-  pointer-events:none;
-}
-.santaPieces.show {
-  opacity:1;
-  transform:scale(1);
-}
-.santaPiece {
-  position:absolute;
-  top:0;
-  width:65px;height:65px;
-  border-radius:8px;
-  background:linear-gradient(145deg,#dcdfe9,#a0a3b0);
-  display:flex;align-items:center;justify-content:center;
-  font-size:2rem;
-  color:#fff;
-  box-shadow:0 0 20px rgba(255,255,255,0.25);
-  transform-style:preserve-3d;
-  cursor:grab;
-  user-select:none;
-  transition:transform .2s ease, box-shadow .2s ease;
-  pointer-events:auto;
-}
-.santaPiece:active{cursor:grabbing;transform:scale(1.1);}
-.santaPiece.king{left:40px;background:linear-gradient(145deg,#ffbf00,#cc9a00);}
-.santaPiece.guard{right:40px;background:linear-gradient(145deg,#5bc0de,#337ab7);}
-
-/* === Board === */
-.board3d{
-  width:min(80vmin,85vw);
-  height:auto;
-  aspect-ratio:1/1;
-  max-height:50vh;
-  perspective:1200px;
-  z-index:1;
+.santaSection{
   display:flex;
   align-items:center;
   justify-content:center;
-  transform:translateY(0);
-  position:relative;
-  flex-shrink:0;
+  gap:4dvw;
 }
-#board{
+.santaSection img{
+  width:clamp(100px,22vmin,200px);
+  height:auto;
+  filter:drop-shadow(0 0 10px rgba(255,255,255,0.3));
+}
+.santaPiece{
+  width:65px;height:65px;
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:2rem;
+  color:#fff;
+  transform-style:preserve-3d;
+  cursor:grab;
+  transition:transform .2s ease,box-shadow .2s ease;
+  user-select:none;
+  opacity:0;
+  transform:scale(0.7);
+}
+.santaPiece:active{transform:scale(1.1);}
+.santaPiece.king{background:linear-gradient(145deg,#ffbf00,#cc9a00);}
+.santaPiece.guard{background:linear-gradient(145deg,#5bc0de,#337ab7);}
+.santaPiece.show{opacity:1;transform:scale(1);transition:opacity 1.5s ease,transform 1.5s ease;}
+
+.board3d {
+  width: min(70vmin, 90vw);
+  aspect-ratio: 1 / 1;
+  perspective: 1200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Direkt unter Santa */
+  margin-top: 0.5;
+  margin-bottom: 0;
+  position: relative;
+  top: 0;
+
+  /* Damit alles reinpasst */
+  max-height: 55vh;
+}
+
+@media (max-height: 850px) {
+  .board3d {
+    max-height: 50vh;
+  }
+}
+
+@media (max-height: 700px) {
+  .board3d {
+    max-height: 48vh;
+  }
+}
+
+@media (max-height: 600px) {
+  .board3d {
+    max-height: 46vh;
+  }
+}
+
+
+#board {
   display:grid;
   grid-template-columns:repeat(var(--board-size),1fr);
   grid-template-rows:repeat(var(--board-size),1fr);
   gap:var(--tile-gap);
-  width:100%;height:100%;
-  border:2px solid rgba(255,255,255,0.25);
-  border-radius:12px;
-  transform-style:preserve-3d;transform-origin:center;
-  transform:rotateX(var(--tilt-start));animation:tiltIn var(--anim-duration)ease-out forwards;
-  box-shadow:0 30px 60px rgba(0,0,0,0.45);
+  width:100%;
+  height:100%;
+  border-radius:10px;
+  transform-style:preserve-3d;
+  transform-origin:center bottom;
+  transform:rotateX(var(--tilt-start));
+  animation:tiltIn var(--anim-duration)ease-out forwards;
+  box-shadow:0 20px 50px rgba(0,0,0,0.5);
 }
-@keyframes tiltIn{from{transform:rotateX(var(--tilt-start));}to{transform:rotateX(var(--tilt-end));}}
+
+@keyframes tiltIn {
+  from { transform: rotateX(var(--tilt-start)); }
+  to   { transform: rotateX(var(--tilt-end)); }
+}
+
+/* === TILE === */
 .tile{
   position:relative;
   background:linear-gradient(145deg,#51483e,#332d25);
   border:1px solid rgba(255,255,255,0.1);
   border-radius:6px;
   transform-style:preserve-3d;
-  display:flex;align-items:center;justify-content:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   cursor:pointer;
   transition:transform .6s ease, box-shadow .3s ease, background .3s ease;
-  box-shadow:inset 0 2px 4px rgba(0,0,0,0.4);
   aspect-ratio:1/1;
+  box-shadow:inset 0 2px 4px rgba(0,0,0,0.4);
 }
 .tile.center{
   background:radial-gradient(circle at center,#ff3300 0%,#7a0000 70%);
   border:2px solid rgba(255,120,0,1);
-  box-shadow:0 0 30px rgba(255,100,0,0.9),
-             0 0 70px rgba(255,60,0,0.7),
+  box-shadow:0 0 35px rgba(255,100,0,0.9),
+             0 0 80px rgba(255,60,0,0.7),
              inset 0 0 50px rgba(255,200,100,0.5);
   animation:flame 1.6s infinite ease-in-out alternate;
   cursor:default !important;
@@ -189,13 +196,13 @@ body{
 }
 .tile.pillar::before{transform:translateZ(20px);}
 .tile.pillar::after{transform:rotateX(90deg) translateZ(20px);}
-.tile.highlight {
+.tile.highlight{
   box-shadow:0 0 15px 6px rgba(0,80,255,0.6);
   background:linear-gradient(145deg,#3a4a6b,#1a2338);
   border:1px solid rgba(0,100,255,0.6);
 }
 
-/* === Koordinaten === */
+/* === KOORDINATEN === */
 #coords {
   position:absolute;
   inset:0;
@@ -204,26 +211,32 @@ body{
   transform:rotateX(var(--tilt-end));
   z-index:5;
 }
-.coord-col, .coord-row {
+
+.coord-col,
+.coord-row {
   position:absolute;
-  color:rgba(255,255,255,0.8);
-  font-size:clamp(10px,1.5vmin,14px);
-  text-shadow:0 0 4px rgba(0,0,0,0.7);
-  transform:translateZ(2px);
+  color:rgba(255,255,255,0.85);
+  font-size:clamp(8px,1.4vmin,13px);
+  text-shadow:0 0 4px rgba(0,0,0,0.6);
+  transform:translateZ(8px);
 }
+
 .coord-col {
   bottom:-1.5em;
   width:calc(100% / var(--board-size));
   text-align:center;
   left:calc((var(--index) + 0.5) * (100% / var(--board-size)));
-  transform:translateX(-50%) translateZ(2px);
+  transform:translateX(-50%) translateZ(8px);
 }
+
 .coord-row {
   left:-1.5em;
   height:calc(100% / var(--board-size));
-  display:flex;align-items:center;justify-content:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   top:calc((var(--index) + 0.5) * (100% / var(--board-size)));
-  transform:translateY(-50%) translateZ(2px);
+  transform:translateY(-50%) translateZ(8px);
 }
 </style>
 </head>
@@ -232,9 +245,10 @@ body{
 
   <div class="santaWrap">
     <p class="speechBubble" id="speechBubble">Willkommen, Sterblicher. Die Mitternacht ist still, und der Schnee tanzt … 🎅</p>
-    <img id="santaImg" src="assets/opponent/santa1.png" alt="Santa Gegner" />
-    <div class="santaPieces" id="santaPieces">
+
+    <div class="santaSection">
       <div class="santaPiece king" draggable="true" id="king">👑</div>
+      <img id="santaImg" src="assets/opponent/santa1.png" alt="Santa Gegner" />
       <div class="santaPiece guard" draggable="true" id="guard">🛡️</div>
     </div>
   </div>
@@ -333,13 +347,18 @@ function createSnowflakes(c,n=40){
 document.addEventListener('DOMContentLoaded',()=>{
   new Board(9);
   const b=document.getElementById('speechBubble');
-  const p=document.getElementById('santaPieces');
+  const king=document.getElementById('king');
+  const guard=document.getElementById('guard');
   const t1=b.textContent.trim();
   b.textContent='';
   const t2="Platziere den König und den Guard auf dem Spielfeld. Der König darf überall stehen, der Guard nur in deiner ersten Reihe. 👑🛡️";
   document.getElementById('board').addEventListener('animationend',()=>{
     typeWriter(b,t1,30);
-    setTimeout(()=>{p.classList.add('show');setTimeout(()=>{typeWriter(b,t2,25);},1800);},6000);
+    setTimeout(()=>{
+      king.classList.add('show');
+      guard.classList.add('show');
+      setTimeout(()=>{typeWriter(b,t2,25);},1800);
+    },6000);
   },{once:true});
   createSnowflakes(document.getElementById('snow'));
   document.querySelectorAll('.santaPiece').forEach(p=>{
