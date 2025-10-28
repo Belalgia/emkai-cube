@@ -3,21 +3,27 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Frost Duel – Santa Frost</title>
+<title>3D Board – Santa Frost</title>
 <style>
-:root{
-  --board-size: 9;
+:root {
+  --board-size: 10; /* +1 für Koordinatenrahmen */
   --tile-gap: 4px;
   --tilt-start: 90deg;
   --tilt-end: 18deg;
-  --anim-duration: 1200ms;
+  --anim-duration: 2000ms;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{
-  height:100dvh; display:flex; flex-direction:column; align-items:center;
-  background:linear-gradient(to bottom,#081226 0%,#0e1a3a 35%,#0b0f1e 100%);
-  color:#fff; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-  overflow:hidden; perspective:1200px; padding:1dvh 0;
+body {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(to bottom,#081226 0%,#0e1a3a 35%,#0b0f1e 100%);
+  color: #fff;
+  font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  overflow: hidden;
+  perspective: 1200px;
+  padding: 1dvh 0;
 }
 
 /* ❄️ Schneefall */
@@ -25,435 +31,260 @@ body{
 .snowflake{position:absolute;top:-10px;background:white;border-radius:50%;opacity:.8;animation:fall linear forwards;}
 @keyframes fall{0%{transform:translateY(0);opacity:1;}100%{transform:translateY(35vh);opacity:0;}}
 
-/* === UI === */
-.santaWrap{display:flex;flex-direction:column;align-items:center;gap:1dvh;z-index:2;margin:0.5dvh 0;}
+/* === Santa & UI === */
+.santaWrap {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 1dvh; z-index: 2; margin-top: 0.5dvh; margin-bottom: 0.5dvh;
+}
 .speechBubble{
-  background:rgba(255,255,255,0.12); border:1.5px solid rgba(255,255,255,0.3);
-  border-radius:16px; padding:1dvh 2dvw; font-size:clamp(12px,2.3vw,18px);
-  line-height:1.4; width:min(85vw,680px); height:4.8em; text-align:center;
-  text-shadow:0 0 6px rgba(255,255,255,0.3); overflow:hidden; opacity:0; transition:opacity .8s ease;
-  display:flex;align-items:center;justify-content:center; box-shadow:0 0 8px rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.12);
+  border:1.5px solid rgba(255,255,255,0.3);
+  border-radius:16px;
+  padding:1dvh 2dvw;
+  font-size:clamp(12px,2.3vw,18px);
+  line-height:1.4;
+  width:min(85vw,600px);
+  height:4.8em;
+  text-align:center;
+  overflow:hidden;
+  opacity:0;
+  transition:opacity .8s ease;
+  display:flex;align-items:center;justify-content:center;
 }
 .santaSection{display:flex;align-items:center;justify-content:center;gap:4dvw;}
-.santaSection img{width:clamp(100px,22vmin,200px);height:auto;filter:drop-shadow(0 0 10px rgba(255,255,255,0.3));}
-
-/* Board */
-.board3d{
-  width:96vw; max-width:620px; aspect-ratio:1/1; perspective:1200px;
-  display:flex; align-items:center; justify-content:center; margin:0 auto; position:relative;
-  max-height:60vh;
+.santaSection img{width:clamp(100px,22vmin,200px);filter:drop-shadow(0 0 10px rgba(255,255,255,0.3));}
+.santaPiece{
+  width:100%;height:100%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:2rem;color:#fff;
+  cursor:grab;transform-style:preserve-3d;
+  user-select:none;opacity:0;transform:scale(0.7) rotateX(var(--tilt-end));
+  transition:opacity 1s ease,transform .3s ease;
 }
-@media (max-height:850px){.board3d{max-height:52vh;}}
-@media (max-height:700px){.board3d{max-height:48vh;}}
-@media (max-height:600px){.board3d{max-height:46vh;}}
+.santaPiece.show{opacity:1;transform:scale(1) rotateX(var(--tilt-end));}
+.santaPiece.king{background:linear-gradient(145deg,#ffbf00,#cc9a00);border-radius:8px;}
+.santaPiece.guard{background:linear-gradient(145deg,#5bc0de,#337ab7);border-radius:8px;}
+.santaPiece.enemy{filter:brightness(0.8);}
 
-#board{
-  display:grid; grid-template-columns:repeat(var(--board-size),1fr);
-  grid-template-rows:repeat(var(--board-size),1fr); gap:var(--tile-gap);
-  width:100%; height:100%; border-radius:10px;
-  transform-origin:center bottom; transform:rotateX(var(--tilt-start));
-  animation:tiltIn var(--anim-duration) ease-out forwards; box-shadow:0 20px 50px rgba(0,0,0,0.5);
+/* BOARD */
+.board3d {
+  width:96vw;max-width:600px;aspect-ratio:1/1;
+  display:flex;align-items:center;justify-content:center;
+  perspective:1200px;margin:0 auto;max-height:60vh;
+}
+#board {
+  display:grid;
+  grid-template-columns:repeat(var(--board-size),1fr);
+  grid-template-rows:repeat(var(--board-size),1fr);
+  gap:var(--tile-gap);
+  width:100%;height:100%;
+  transform-style:preserve-3d;
+  transform-origin:center bottom;
+  transform:rotateX(var(--tilt-start));
+  animation:tiltIn var(--anim-duration)ease-out forwards;
 }
 @keyframes tiltIn{from{transform:rotateX(var(--tilt-start));}to{transform:rotateX(var(--tilt-end));}}
 
-/* Tiles */
+/* TILE */
 .tile{
-  position:relative; aspect-ratio:1/1; border-radius:6px; transform-style:preserve-3d;
-  display:flex; align-items:center; justify-content:center; cursor:pointer;
-  background:linear-gradient(145deg,#51483e,#332d25); border:1px solid rgba(255,255,255,0.1);
-  box-shadow:inset 0 2px 4px rgba(0,0,0,0.4); transition: background .25s, box-shadow .25s;
+  position:relative;
+  background:linear-gradient(145deg,#51483e,#332d25);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  transition:background .3s ease, box-shadow .3s ease;
+  aspect-ratio:1/1;
+  transform-style:preserve-3d;
 }
 .tile.center{
   background:radial-gradient(circle at center,#ff3300 0%,#7a0000 70%);
   border:2px solid rgba(255,120,0,1);
-  box-shadow:0 0 35px rgba(255,100,0,0.9), 0 0 80px rgba(255,60,0,0.7), inset 0 0 50px rgba(255,200,100,0.5);
-  cursor:default;
+  box-shadow:0 0 35px rgba(255,100,0,0.9);
 }
-.tile.highlight{box-shadow:0 0 15px 6px rgba(0,80,255,0.55), inset 0 0 0 2px rgba(0,120,255,0.5);}
-.tile.move{outline:3px solid rgba(0,200,255,0.8);}
-.tile.block-ghost{outline:3px dashed rgba(255,255,255,0.6);}
+.tile.highlight{box-shadow:0 0 15px 6px rgba(0,80,255,0.6);background:linear-gradient(145deg,#3a4a6b,#1a2338);}
+.tile.coord{
+  background:transparent !important;
+  border:none !important;
+  cursor:default !important;
+  pointer-events:none;
+  color:#fff;opacity:0.8;
+  font-weight:bold;
+  font-size:clamp(8px,1.8vmin,14px);
+}
 
-/* Pieces & Blocks */
-.piece{
-  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-  transform:rotateX(var(--tilt-end)); border-radius:10px; font-size:clamp(18px,5.2vmin,32px);
-  user-select:none;
-}
-.king-player{background:linear-gradient(145deg,#ffbf00,#cc9a00); color:#fff;}
-.king-ai{background:linear-gradient(145deg,#5bc0de,#337ab7); color:#fff;}
-.block{background:linear-gradient(145deg,#a6b9c7,#6f8796); opacity:.95;}
-
-/* Coord overlay (am Rand außerhalb via absolute) – optional super dezent */
-.coords{
-  position:absolute; inset:0; pointer-events:none; transform:rotateX(var(--tilt-end)); z-index:5;
-}
-.coords .col, .coords .row{
-  position:absolute; color:rgba(255,255,255,0.85); font-size:clamp(8px,1.6vmin,12px); text-shadow:0 0 4px rgba(0,0,0,0.6);
-}
-.coords .col{ bottom:-1.6em; width:calc(100%/var(--board-size)); text-align:center; }
-.coords .row{ left:-1.6em; height:calc(100%/var(--board-size)); display:flex; align-items:center; justify-content:center; }
-
-.hud{
-  margin-top:.6rem; display:flex; gap:.6rem; align-items:center; justify-content:center; opacity:.9;
-  font-size:clamp(12px,2.2vw,16px);
-}
-.hud .btn{
-  background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); padding:.45rem .8rem; border-radius:10px; cursor:pointer;
-}
-.hud .btn:active{transform:scale(0.98);}
+/* mobile optimierung */
+@media (max-height:700px){.board3d{max-height:48vh;}}
 </style>
 </head>
 <body>
-  <div class="snow-container" id="snow"></div>
+<div class="snow-container" id="snow"></div>
 
-  <div class="santaWrap">
-    <p class="speechBubble" id="speechBubble">Willkommen, Sterblicher. Die Mitternacht ist still, und der Schnee tanzt … 🎅</p>
-    <div class="santaSection">
-      <img id="santaImg" src="assets/opponent/santa1.png" alt="Santa Gegner" />
-    </div>
-    <div class="hud">
-      <button class="btn" id="restartBtn">Neu starten</button>
-      <span id="turnInfo">Du bist am Zug.</span>
-    </div>
+<div class="santaWrap">
+  <p class="speechBubble" id="speechBubble">Willkommen, Sterblicher. Die Mitternacht ist still, und der Schnee tanzt … 🎅</p>
+  <div class="santaSection">
+    <div class="santaPiece king" draggable="true" id="king">👑</div>
+    <img id="santaImg" src="assets/opponent/santa1.png" alt="Santa Gegner" />
+    <div class="santaPiece guard" draggable="true" id="guard">🛡️</div>
   </div>
+</div>
 
-  <div class="board3d">
-    <div id="board"></div>
-    <div class="coords" id="coords"></div>
-  </div>
+<div class="board3d"><div id="board"></div></div>
 
 <script>
-/* ===== Utils & Setup ===== */
-function typeWriter(el,text,speed=22){
-  const t = text.length>300? text.slice(0,290)+'…' : text;
-  el.textContent=''; el.style.opacity='1'; let i=0;
-  (function tick(){ if(i<t.length){ el.textContent+=t[i++]; setTimeout(tick, speed);} })();
-}
-function speak(t){ typeWriter(document.getElementById('speechBubble'), t, 18); }
-function createSnowflakes(c,n=40){
-  for(let i=0;i<n;i++){
-    const f=document.createElement('div'); f.classList.add('snowflake');
-    const s=Math.random()*4+2; f.style.width=`${s}px`; f.style.height=`${s}px`;
-    f.style.left=`${Math.random()*100}%`; f.style.animationDuration=`${5+Math.random()*5}s`; f.style.animationDelay=`${Math.random()*5}s`;
-    c.appendChild(f); f.addEventListener('animationend',()=>{ c.removeChild(f); createSnowflakes(c,1);});
-  }
-}
-
-/* ===== Board & Game ===== */
-const SIZE = 9;
-const CENTER = Math.floor((SIZE+1)/2);
-
-const STATE = {
-  turn: 'player', // 'player' | 'ai' | 'gameover'
-  player: { x: CENTER, y: SIZE },   // Start unten Mitte
-  ai:     { x: CENTER, y: 1 },      // Start oben Mitte
-  blocks: new Set(),                // "x,y" strings
-};
-
-const boardEl = document.getElementById('board');
-const coordsEl = document.getElementById('coords');
-const turnInfo = document.getElementById('turnInfo');
-
-function key(x,y){ return `${x},${y}`; }
-function inBounds(x,y){ return x>=1 && x<=SIZE && y>=1 && y<=SIZE; }
-function isFree(x,y){
-  if (!inBounds(x,y)) return false;
-  if (x===CENTER && y===CENTER) return false; // optional: zentrales Feld gesperrt
-  if (STATE.player.x===x && STATE.player.y===y) return false;
-  if (STATE.ai.x===x && STATE.ai.y===y) return false;
-  if (STATE.blocks.has(key(x,y))) return false;
-  return true;
-}
-function adjacent(a,b){ return Math.max(Math.abs(a.x-b.x), Math.abs(a.y-b.y))===1; }
-
-/* Tiles erzeugen */
-function buildBoard(){
-  boardEl.style.setProperty('--board-size', String(SIZE));
-  boardEl.innerHTML='';
-  for (let y=1;y<=SIZE;y++){
-    for (let x=1;x<=SIZE;x++){
-      const t=document.createElement('div');
-      t.className='tile';
-      t.dataset.x=x; t.dataset.y=y;
-      if (x===CENTER && y===CENTER){ t.classList.add('center'); t.style.cursor='default'; }
-      boardEl.appendChild(t);
+class Tile {
+  constructor(x,y,isCenter=false,isCoord=false,label=""){
+    this.x=x;this.y=y;this.isCenter=isCenter;this.isCoord=isCoord;
+    this.el=document.createElement("div");
+    this.el.className="tile";
+    if(isCenter)this.el.classList.add("center");
+    if(isCoord){
+      this.el.classList.add("coord");
+      this.el.textContent=label;
     }
   }
-  // Koordinaten außen
-  coordsEl.innerHTML='';
-  for (let x=1;x<=SIZE;x++){
-    const c=document.createElement('div');
-    c.className='col';
-    c.style.left=`calc(${(x-0.5)*(100/SIZE)}%)`;
-    c.textContent=String.fromCharCode(64+x);
-    coordsEl.appendChild(c);
-  }
-  for (let y=1;y<=SIZE;y++){
-    const r=document.createElement('div');
-    r.className='row';
-    r.style.top=`calc(${(y-0.5)*(100/SIZE)}%)`;
-    r.textContent=String(SIZE-(y-1));
-    coordsEl.appendChild(r);
-  }
 }
-
-/* Pieces rendern */
-function clearPieces(){
-  document.querySelectorAll('.piece').forEach(p=>p.remove());
-}
-function placePiece(x,y,cls,emoji){
-  const tile = getTileEl(x,y); if(!tile) return;
-  const p = document.createElement('div');
-  p.className = `piece ${cls}`;
-  p.textContent = emoji;
-  tile.appendChild(p);
-}
-function renderBlocks(){
-  document.querySelectorAll('.block').forEach(b=>b.remove());
-  STATE.blocks.forEach(k=>{
-    const [x,y]=k.split(',').map(Number);
-    const tile=getTileEl(x,y);
-    if(tile){
-      const b=document.createElement('div');
-      b.className='piece block';
-      tile.appendChild(b);
-    }
-  });
-}
-function renderAll(){
-  clearPieces();
-  placePiece(STATE.player.x, STATE.player.y, 'king-player', '👑');
-  placePiece(STATE.ai.x, STATE.ai.y, 'king-ai', '👑');
-  renderBlocks();
-}
-
-/* Helpers */
-function getTileEl(x,y){ return boardEl.querySelector(`.tile[data-x="${x}"][data-y="${y}"]`); }
-function forEachTile(cb){
-  boardEl.querySelectorAll('.tile').forEach(t=>{
-    const x=+t.dataset.x, y=+t.dataset.y; cb(t,x,y);
-  });
-}
-function clearHighlights(){
-  forEachTile(t=>t.classList.remove('highlight','move','block-ghost'));
-}
-
-/* Legal Moves: König 1 Feld, kein Adjacent zum Gegner nach dem Zug */
-function legalKingMoves(side){
-  const me = STATE[side];
-  const them = STATE[side==='player'?'ai':'player'];
-  const moves=[];
-  for(let dy=-1;dy<=1;dy++){
-    for(let dx=-1;dx<=1;dx++){
-      if(dx===0 && dy===0) continue;
-      const nx=me.x+dx, ny=me.y+dy;
-      if(!isFree(nx,ny)) continue;
-      // nach Zug nicht neben Gegner stehen
-      const hypot={x:nx,y:ny};
-      if(adjacent(hypot, them)) continue;
-      moves.push({x:nx,y:ny});
-    }
-  }
-  return moves;
-}
-
-/* Win Checks */
-function hasAnyMove(side){ return legalKingMoves(side).length>0; }
-function reachedBackRow(side){
-  if(side==='player') return STATE.player.y===1;   // oben erreicht
-  else return STATE.ai.y===SIZE;                   // unten erreicht
-}
-function checkVictory(){
-  if(reachedBackRow('player')) return 'player';
-  if(reachedBackRow('ai')) return 'ai';
-  if(!hasAnyMove('player')) return 'ai';
-  if(!hasAnyMove('ai')) return 'player';
-  return null;
-}
-
-/* Turn Flow */
-let phase = 'select-move'; // 'select-move' -> 'place-block'
-let pendingMove = null;
-
-function startPlayerTurn(){
-  STATE.turn='player'; phase='select-move'; pendingMove=null;
-  const moves=legalKingMoves('player');
-  clearHighlights();
-  moves.forEach(m=> getTileEl(m.x,m.y)?.classList.add('move'));
-  speak("Dein Zug: Ziehe den König 1 Feld. Danach setzt du einen Eisblock an beliebiger freier Stelle.");
-  turnInfo.textContent="Du bist am Zug.";
-}
-function finishPlayerMove(){
-  // highlight: alle freien Felder für Block (sanfter Hinweis)
-  clearHighlights();
-  forEachTile((t,x,y)=>{ if(isFree(x,y)) t.classList.add('block-ghost'); });
-  speak("Wähle nun ein Feld für deinen Eisblock.");
-  phase='place-block';
-}
-
-/* Player interactions (Touch + Mouse identisch via Click) */
-boardEl.addEventListener('click', onBoardClick);
-boardEl.addEventListener('touchend', (e)=>{
-  // Normaler Tap soll wie Click funktionieren
-  const touched = document.elementFromPoint(
-    e.changedTouches[0].clientX, e.changedTouches[0].clientY
-  );
-  const tile = touched?.closest?.('.tile');
-  if(tile){ tile.click(); }
-}, {passive:true});
-
-function onBoardClick(e){
-  if(STATE.turn!=='player' || STATE.turn==='gameover') return;
-  const tile = e.target.closest('.tile'); if(!tile) return;
-  const x=+tile.dataset.x, y=+tile.dataset.y;
-
-  if(phase==='select-move'){
-    const moves = legalKingMoves('player');
-    const ok = moves.some(m=>m.x===x && m.y===y);
-    if(!ok){ speak("Ungültiges Zielfeld."); return; }
-    // ausführen
-    STATE.player.x=x; STATE.player.y=y;
-    renderAll();
-    const win=checkVictory();
-    if(win){ endGame(win); return; }
-    finishPlayerMove();
-  } else if (phase==='place-block'){
-    if(!isFree(x,y)){ speak("Hier kannst du keinen Block setzen."); return; }
-    STATE.blocks.add(key(x,y));
-    renderAll();
-    const win=checkVictory();
-    if(win){ endGame(win); return; }
-    // Computer ist dran
-    startAiTurn();
-  }
-}
-
-/* AI */
-function startAiTurn(){
-  STATE.turn='ai'; phase='ai';
-  clearHighlights();
-  turnInfo.textContent="Santa Frost überlegt…";
-  speak("Santa Frost ist am Zug … ❄️");
-
-  // kleiner Delay für Lesbarkeit
-  setTimeout(()=>{
-    const move = chooseAiMove();
-    if(move){
-      STATE.ai.x = move.x; STATE.ai.y = move.y;
-    }
-    renderAll();
-    let win=checkVictory();
-    if(win){ endGame(win); return; }
-
-    const block = chooseAiBlock();
-    if(block){
-      STATE.blocks.add(key(block.x, block.y));
-    }
-    renderAll();
-    win=checkVictory();
-    if(win){ endGame(win); return; }
-
-    startPlayerTurn();
-  }, 450);
-}
-
-/* AI Heuristiken */
-function chooseAiMove(){
-  const moves = legalKingMoves('ai');
-  if(moves.length===0) return null;
-
-  // Heuristik:
-  // 1) Bevorzuge Moves, die nach unten gehen (y größer) – Ziel: Grundreihe des Spielers
-  // 2) Meide Nähe zum Spieler (nicht zu dicht)
-  // 3) Weniger umliegende freie Felder dem Spieler lassen
-  const px=STATE.player.x, py=STATE.player.y;
-
-  function score(m){
-    let s = 0;
-    // nach unten bevorzugen
-    s += m.y * 2;
-    // Distanz zum Spieler (etwas Abstand ist gut)
-    const d = Math.max(Math.abs(m.x-px), Math.abs(m.y-py));
-    s += d;
-    // Wenn das Feld viele freie Nachbarn für den AI-König hat, ist das auch gut
-    let freeN=0;
-    for (let dy=-1; dy<=1; dy++){
-      for (let dx=-1; dx<=1; dx++){
-        if(dx===0 && dy===0) continue;
-        const nx=m.x+dx, ny=m.y+dy;
-        if(isFree(nx,ny)) freeN++;
+class Board{
+  constructor(size=9){
+    this.size=size;
+    this.full=size+1;
+    this.center=Math.floor(size/2);
+    this.el=document.getElementById("board");
+    this.el.style.setProperty("--board-size",String(this.full));
+    this.tiles=[];
+    for(let y=0;y<this.full;y++){
+      for(let x=0;x<this.full;x++){
+        let t;
+        if(x===0 && y===0){t=new Tile(x,y,false,true,"");}
+        else if(y===0 && x>0){t=new Tile(x,y,false,true,String.fromCharCode(64+x));}
+        else if(x===0 && y>0){t=new Tile(x,y,false,true,String(this.size-(y-1))); }
+        else{
+          t=new Tile(x,y,x-1===this.center&&y-1===this.center,false);
+        }
+        this.el.appendChild(t.el);
+        this.tiles.push(t);
       }
     }
-    s += freeN*0.3;
-    return s;
   }
-  moves.sort((a,b)=> score(b)-score(a));
-  return moves[0];
+  getTile(x,y){return this.tiles.find(t=>t.x===x&&t.y===y);}
+  neighborCoords(x,y){
+    const n=[];
+    for(let dy=-1;dy<=1;dy++){
+      for(let dx=-1;dx<=1;dx++){
+        if(dx===0&&dy===0)continue;
+        const tx=x+dx,ty=y+dy;
+        if(tx>0&&tx<=this.size&&ty>0&&ty<=this.size)n.push([tx,ty]);
+      }
+    }
+    return n;
+  }
+  hasNeighborPiece(x,y){
+    return this.neighborCoords(x,y).some(([nx,ny])=>{
+      const tile=this.getTile(nx,ny);
+      return tile.el.querySelector(".santaPiece");
+    });
+  }
 }
-
-function chooseAiBlock(){
-  // Priorität: ein Feld um den Spieler herum blockieren, sonst irgendein freies Feld oben
-  const px=STATE.player.x, py=STATE.player.y;
-  const candidates=[];
-  for(let dy=-1; dy<=1; dy++){
-    for(let dx=-1; dx<=1; dx++){
-      if(dx===0 && dy===0) continue;
-      const nx=px+dx, ny=py+dy;
-      if(isFree(nx,ny)) candidates.push({x:nx,y:ny,score:10});
+function typeWriter(el,text,speed=25){el.textContent="";el.style.opacity="1";let i=0;(function t(){if(i<text.length){el.textContent+=text[i++];setTimeout(t,speed);}})();}
+function speakSanta(t){typeWriter(document.getElementById("speechBubble"),t,20);}
+function createSnowflakes(c,n=40){for(let i=0;i<n;i++){const f=document.createElement("div");f.classList.add("snowflake");const s=Math.random()*4+2;f.style.width=`${s}px`;f.style.height=`${s}px`;f.style.left=`${Math.random()*100}%`;f.style.animationDuration=`${5+Math.random()*5}s`;f.style.animationDelay=`${Math.random()*5}s`;c.appendChild(f);f.addEventListener("animationend",()=>{c.removeChild(f);createSnowflakes(c,1);});}}
+function enableDragAndTouch(piece,board){
+  let currentTile=null;
+  function place(tile){
+    if(!tile||tile.classList.contains("center")||tile.classList.contains("coord")){
+      speakSanta("Dieses Feld ist ungültig! 🔥");return;
+    }
+    const x=parseInt(tile.dataset.x),y=parseInt(tile.dataset.y);
+    if(piece.id==="guard" && y!==board.size){
+      speakSanta("Der Guard darf nur in deiner ersten Reihe platziert werden! ❄️");return;
+    }
+    if(piece.id==="king" && board.hasNeighborPiece(x,y)){
+      speakSanta("Der König braucht Raum – keine Nachbarn erlaubt! 👑");return;
+    }
+    if(tile.querySelector(".santaPiece")){
+      speakSanta("Dieses Feld ist besetzt! ⚠️");return;
+    }
+    tile.appendChild(piece);
+    piece.style.position="absolute";
+    piece.style.inset="0";
+    piece.style.transform="rotateX(var(--tilt-end)) scale(1)";
+    piece.style.borderRadius="8px";
+    piece.dataset.x=x;piece.dataset.y=y;
+    speakSanta("Gut gemacht!");
+    piece.placed=true;
+    checkBothPlaced();
+  }
+  // desktop
+  piece.addEventListener("dragstart",e=>{e.dataTransfer.setData("piece",piece.id);piece.style.opacity="0.6";});
+  piece.addEventListener("dragend",()=>piece.style.opacity="1");
+  document.querySelectorAll(".tile").forEach(t=>{
+    t.dataset.x=t.x;t.dataset.y=t.y;
+    t.addEventListener("dragover",e=>e.preventDefault());
+    t.addEventListener("drop",e=>{
+      const pid=e.dataTransfer.getData("piece");
+      if(pid===piece.id)place(t);
+    });
+  });
+  // touch
+  piece.addEventListener("touchstart",e=>{piece.classList.add("dragging");e.preventDefault();});
+  piece.addEventListener("touchmove",e=>{
+    const touch=e.touches[0];
+    const el=document.elementFromPoint(touch.clientX,touch.clientY);
+    if(el&&el.classList.contains("tile")){
+      if(currentTile&&currentTile!==el)currentTile.classList.remove("highlight");
+      currentTile=el;el.classList.add("highlight");
+    }
+  });
+  piece.addEventListener("touchend",()=>{
+    if(currentTile){currentTile.classList.remove("highlight");place(currentTile);currentTile=null;}
+    piece.classList.remove("dragging");
+  });
+}
+function computerTurn(board){
+  const enemyKing=document.createElement("div");
+  enemyKing.className="santaPiece king enemy";enemyKing.textContent="👑";
+  const enemyGuard=document.createElement("div");
+  enemyGuard.className="santaPiece guard enemy";enemyGuard.textContent="🛡️";
+  // platzieren: guard in oberster reihe, king zufällig aber keine nachbarn
+  const guardTile=board.getTile(1+Math.floor(Math.random()*board.size),1);
+  guardTile.el.appendChild(enemyGuard);
+  enemyGuard.style.position="absolute";enemyGuard.style.inset="0";enemyGuard.style.transform="rotateX(var(--tilt-end))";
+  let placed=false;
+  while(!placed){
+    const x=1+Math.floor(Math.random()*board.size);
+    const y=2; // zweite Reihe
+    if(!board.hasNeighborPiece(x,y)){
+      const tile=board.getTile(x,y);
+      if(tile&&!tile.el.querySelector(".santaPiece")){
+        tile.el.appendChild(enemyKing);
+        enemyKing.style.position="absolute";enemyKing.style.inset="0";enemyKing.style.transform="rotateX(var(--tilt-end))";
+        placed=true;
+      }
     }
   }
-  if(candidates.length>0){
-    return candidates[Math.floor(Math.random()*candidates.length)];
-  }
-  // fallback: freie Felder bevorzugt in oberen Reihen
-  const fall=[];
-  for(let y=1;y<=SIZE;y++){
-    for(let x=1;x<=SIZE;x++){
-      if(isFree(x,y)) fall.push({x,y,score: (SIZE-y)});
-    }
-  }
-  if(fall.length===0) return null;
-  fall.sort((a,b)=>b.score-a.score);
-  return fall[0];
+  speakSanta("Santa Frost hat seine Figuren platziert! 🎅");
 }
-
-/* Game End */
-function endGame(winner){
-  STATE.turn='gameover';
-  clearHighlights();
-  if(winner==='player'){
-    turnInfo.textContent="Du gewinnst! 🏆";
-    speak("Glückwunsch! Du hast Santa Frost überlistet. 🎉");
-  }else{
-    turnInfo.textContent="Santa Frost gewinnt. ❄️";
-    speak("Die Kälte siegt … Santa Frost war heute stärker. ❄️");
-  }
+function checkBothPlaced(){
+  const k=document.getElementById("king"),g=document.getElementById("guard");
+  if(k.placed&&g.placed) setTimeout(()=>computerTurn(window.gameBoard),1500);
 }
-
-/* Restart */
-function restart(){
-  STATE.turn='player';
-  STATE.player={x:CENTER,y:SIZE};
-  STATE.ai={x:CENTER,y:1};
-  STATE.blocks.clear();
-  buildBoard();
-  renderAll();
-  clearHighlights();
-  startPlayerTurn();
-}
-
-document.getElementById('restartBtn').addEventListener('click', restart);
-
-/* ===== Init ===== */
-document.addEventListener('DOMContentLoaded', ()=>{
-  document.getElementById('board').addEventListener('animationend', ()=>{
-    speak("Willkommen zu Frost Duel! Ziehe deinen König (1 Feld) und setze danach einen Eisblock. Erreiche die obere Reihe oder blockiere Santa Frost.");
-  }, {once:true});
-
-  createSnowflakes(document.getElementById('snow'));
-  buildBoard();
-  renderAll();
-  startPlayerTurn();
+document.addEventListener("DOMContentLoaded",()=>{
+  const b=document.getElementById("speechBubble");
+  const king=document.getElementById("king"),guard=document.getElementById("guard");
+  window.gameBoard=new Board(9);
+  const t1="Willkommen, Sterblicher. Die Mitternacht ist still, und der Schnee tanzt … 🎅";
+  const t2="Platziere den König und den Guard auf dem Spielfeld. Der König darf überall stehen (aber nicht neben anderen!), der Guard nur in deiner ersten Reihe. 👑🛡️";
+  b.textContent="";
+  document.getElementById("board").addEventListener("animationend",()=>{
+    typeWriter(b,t1,30);
+    setTimeout(()=>{
+      king.classList.add("show");guard.classList.add("show");
+      setTimeout(()=>typeWriter(b,t2,25),1800);
+    },6000);
+  },{once:true});
+  createSnowflakes(document.getElementById("snow"));
+  enableDragAndTouch(king,window.gameBoard);
+  enableDragAndTouch(guard,window.gameBoard);
 });
 </script>
 </body>
