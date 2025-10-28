@@ -6,7 +6,8 @@
 <title>3D Board – Santa Frost</title>
 <style>
 :root {
-  --board-size: 10; /* +1 für Koordinatenrahmen */
+  --board-size: 9;               /* Logische Spielfeldgröße */
+  --grid-size: calc(var(--board-size) + 1); /* +1 für Koordinatenrahmen */
   --tile-gap: 4px;
   --tilt-start: 90deg;
   --tilt-end: 18deg;
@@ -20,7 +21,7 @@ body {
   align-items: center;
   background: linear-gradient(to bottom,#081226 0%,#0e1a3a 35%,#0b0f1e 100%);
   color: #fff;
-  font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
   overflow: hidden;
   perspective: 1200px;
   padding: 1dvh 0;
@@ -33,8 +34,13 @@ body {
 
 /* === Santa & UI === */
 .santaWrap {
-  display: flex; flex-direction: column; align-items: center;
-  gap: 1dvh; z-index: 2; margin-top: 0.5dvh; margin-bottom: 0.5dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1dvh;
+  z-index: 2;
+  margin-top: 0.5dvh;
+  margin-bottom: 0.5dvh;
 }
 .speechBubble{
   background:rgba(255,255,255,0.12);
@@ -46,245 +52,461 @@ body {
   width:min(85vw,600px);
   height:4.8em;
   text-align:center;
+  text-shadow:0 0 6px rgba(255,255,255,0.3);
   overflow:hidden;
   opacity:0;
   transition:opacity .8s ease;
   display:flex;align-items:center;justify-content:center;
+  margin-bottom:1dvh;
 }
 .santaSection{display:flex;align-items:center;justify-content:center;gap:4dvw;}
-.santaSection img{width:clamp(100px,22vmin,200px);filter:drop-shadow(0 0 10px rgba(255,255,255,0.3));}
+.santaSection img{width:clamp(100px,22vmin,200px);height:auto;filter:drop-shadow(0 0 10px rgba(255,255,255,0.3));}
+
+/* Palette-Figuren (oben) */
 .santaPiece{
-  width:100%;height:100%;
+  width:65px;height:65px;
+  border-radius:8px;
   display:flex;align-items:center;justify-content:center;
-  font-size:2rem;color:#fff;
-  cursor:grab;transform-style:preserve-3d;
-  user-select:none;opacity:0;transform:scale(0.7) rotateX(var(--tilt-end));
-  transition:opacity 1s ease,transform .3s ease;
+  font-size:2rem;
+  color:#fff;
+  transform-style:preserve-3d;
+  cursor:grab;
+  user-select:none;
+  opacity:0;
+  transform:scale(0.7);
+  transition:opacity 1.5s ease,transform 1.5s ease;
 }
-.santaPiece.show{opacity:1;transform:scale(1) rotateX(var(--tilt-end));}
-.santaPiece.king{background:linear-gradient(145deg,#ffbf00,#cc9a00);border-radius:8px;}
-.santaPiece.guard{background:linear-gradient(145deg,#5bc0de,#337ab7);border-radius:8px;}
-.santaPiece.enemy{filter:brightness(0.8);}
+.santaPiece.show{opacity:1;transform:scale(1);}
+.santaPiece:active{transform:scale(1.1);}
+.santaPiece.king{background:linear-gradient(145deg,#ffbf00,#cc9a00);}
+.santaPiece.guard{background:linear-gradient(145deg,#5bc0de,#337ab7);}
+.santaPiece.enemy{filter:brightness(0.85);}
+
+/* Wenn Figur auf einem Tile liegt */
+.tile > .santaPiece.onboard{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  border-radius:8px;
+  transform:rotateX(var(--tilt-end));
+  display:flex;align-items:center;justify-content:center;
+}
 
 /* BOARD */
 .board3d {
-  width:96vw;max-width:600px;aspect-ratio:1/1;
-  display:flex;align-items:center;justify-content:center;
-  perspective:1200px;margin:0 auto;max-height:60vh;
+  width: 96vw;
+  max-width: 600px;
+  aspect-ratio: 1 / 1;
+  perspective: 1200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  position: relative;
+  max-height: 60vh;
 }
+@media (max-height: 850px){.board3d{max-height: 50vh;}}
+@media (max-height: 700px){.board3d{max-height: 48vh;}}
+@media (max-height: 600px){.board3d{max-height: 46vh;}}
+
 #board {
   display:grid;
-  grid-template-columns:repeat(var(--board-size),1fr);
-  grid-template-rows:repeat(var(--board-size),1fr);
+  grid-template-columns:repeat(var(--grid-size),1fr);
+  grid-template-rows:repeat(var(--grid-size),1fr);
   gap:var(--tile-gap);
-  width:100%;height:100%;
+  width:100%;
+  height:100%;
+  border-radius:10px;
   transform-style:preserve-3d;
   transform-origin:center bottom;
   transform:rotateX(var(--tilt-start));
   animation:tiltIn var(--anim-duration)ease-out forwards;
+  box-shadow:0 20px 50px rgba(0,0,0,0.5);
 }
-@keyframes tiltIn{from{transform:rotateX(var(--tilt-start));}to{transform:rotateX(var(--tilt-end));}}
+@keyframes tiltIn { from{ transform: rotateX(var(--tilt-start)); } to{ transform: rotateX(var(--tilt-end)); } }
 
-/* TILE */
+/* === TILE === */
 .tile{
   position:relative;
   background:linear-gradient(145deg,#51483e,#332d25);
   border:1px solid rgba(255,255,255,0.1);
   border-radius:6px;
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;
-  transition:background .3s ease, box-shadow .3s ease;
-  aspect-ratio:1/1;
   transform-style:preserve-3d;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition: box-shadow .3s ease, background .3s ease;
+  aspect-ratio:1/1;
+  box-shadow:inset 0 2px 4px rgba(0,0,0,0.4);
 }
 .tile.center{
   background:radial-gradient(circle at center,#ff3300 0%,#7a0000 70%);
   border:2px solid rgba(255,120,0,1);
-  box-shadow:0 0 35px rgba(255,100,0,0.9);
+  box-shadow:0 0 35px rgba(255,100,0,0.9),
+             0 0 80px rgba(255,60,0,0.7),
+             inset 0 0 50px rgba(255,200,100,0.5);
+  animation:flame 1.6s infinite ease-in-out alternate;
+  cursor:default !important;
 }
-.tile.highlight{box-shadow:0 0 15px 6px rgba(0,80,255,0.6);background:linear-gradient(145deg,#3a4a6b,#1a2338);}
+@keyframes flame {
+  0% { box-shadow:0 0 25px rgba(255,100,0,0.9),
+                 0 0 60px rgba(255,60,0,0.7),
+                 inset 0 0 30px rgba(255,180,50,0.4); }
+  100% { box-shadow:0 0 40px rgba(255,150,0,1),
+                 0 0 90px rgba(255,100,0,0.9),
+                 inset 0 0 60px rgba(255,220,150,0.6); }
+}
+.tile.pillar-label{ /* echte Säule nicht auf Koordinatenfliesen */
+  /* keine Optik – nur Markerklasse falls nötig */
+}
+.tile.highlight{
+  box-shadow:0 0 15px 6px rgba(0,80,255,0.6);
+  background:linear-gradient(145deg,#3a4a6b,#1a2338);
+  border:1px solid rgba(0,100,255,0.6);
+}
+
+/* === KOORDINATEN-TILES (Rand) === */
 .tile.coord{
   background:transparent !important;
   border:none !important;
+  box-shadow:none !important;
   cursor:default !important;
-  pointer-events:none;
-  color:#fff;opacity:0.8;
-  font-weight:bold;
-  font-size:clamp(8px,1.8vmin,14px);
+  pointer-events:none; /* nicht anklickbar */
+  color:rgba(255,255,255,0.85);
+  font-size:clamp(8px,1.6vmin,14px);
+  text-shadow:0 0 4px rgba(0,0,0,0.6);
 }
+/* Top-Row: Buchstaben unten mittig an der Kante zum Spielfeld */
+.tile.coord.top { align-items:flex-end; }
+.tile.coord.top .coordText { margin-bottom:4px; transform:translateZ(6px); }
+/* Left-Column: Zahlen rechts mittig an der Kante zum Spielfeld */
+.tile.coord.left { justify-content:flex-end; }
+.tile.coord.left .coordText { margin-right:6px; transform:translateZ(6px); }
 
-/* mobile optimierung */
-@media (max-height:700px){.board3d{max-height:48vh;}}
+.coordText{pointer-events:none;}
+
+/* (legacy) #coords bleibt erhalten, wird aber unsichtbar gehalten – Funktion addCoords bleibt existierend */
+#coords{display:none;}
 </style>
 </head>
 <body>
-<div class="snow-container" id="snow"></div>
+  <div class="snow-container" id="snow"></div>
 
-<div class="santaWrap">
-  <p class="speechBubble" id="speechBubble">Willkommen, Sterblicher. Die Mitternacht ist still, und der Schnee tanzt … 🎅</p>
-  <div class="santaSection">
-    <div class="santaPiece king" draggable="true" id="king">👑</div>
-    <img id="santaImg" src="assets/opponent/santa1.png" alt="Santa Gegner" />
-    <div class="santaPiece guard" draggable="true" id="guard">🛡️</div>
+  <div class="santaWrap">
+    <p class="speechBubble" id="speechBubble">Willkommen, Sterblicher. Die Mitternacht ist still, und der Schnee tanzt … 🎅</p>
+
+    <div class="santaSection">
+      <div class="santaPiece king" draggable="true" id="king">👑</div>
+      <img id="santaImg" src="assets/opponent/santa1.png" alt="Santa Gegner" />
+      <div class="santaPiece guard" draggable="true" id="guard">🛡️</div>
+    </div>
   </div>
-</div>
 
-<div class="board3d"><div id="board"></div></div>
+  <div class="board3d">
+    <div id="board"></div>
+    <!-- legacy element für addCoords, bleibt leer / hidden -->
+    <div id="coords"></div>
+  </div>
 
 <script>
+/* ===== Klassen ===== */
 class Tile {
-  constructor(x,y,isCenter=false,isCoord=false,label=""){
-    this.x=x;this.y=y;this.isCenter=isCenter;this.isCoord=isCoord;
-    this.el=document.createElement("div");
-    this.el.className="tile";
-    if(isCenter)this.el.classList.add("center");
-    if(isCoord){
-      this.el.classList.add("coord");
-      this.el.textContent=label;
+  constructor(gridX, gridY, isCenter=false, isCoord=false, label="", coordSide="") {
+    this.gridX = gridX;        // 0..grid
+    this.gridY = gridY;        // 0..grid
+    this.isCenter = isCenter;
+    this.isCoord = isCoord;
+    // Logische Board-Koordinaten (1..board), null für Koordinatenrand
+    this.x = isCoord ? null : gridX; // wir bauen Spielfeld ab (1..board) bei gridX>0, gridY>0
+    this.y = isCoord ? null : gridY;
+
+    this.el = document.createElement('div');
+    this.el.className = 'tile';
+    if (isCenter) this.el.classList.add('center');
+
+    if (isCoord) {
+      this.el.classList.add('coord');
+      this.el.classList.add(coordSide); // "top" oder "left"
+      const span = document.createElement('span');
+      span.className = 'coordText';
+      span.textContent = label;
+      this.el.appendChild(span);
+    }
+
+    // Datensätze für Zugriff
+    if (!isCoord) {
+      this.el.dataset.x = String(this.x);
+      this.el.dataset.y = String(this.y);
     }
   }
 }
-class Board{
-  constructor(size=9){
-    this.size=size;
-    this.full=size+1;
-    this.center=Math.floor(size/2);
-    this.el=document.getElementById("board");
-    this.el.style.setProperty("--board-size",String(this.full));
-    this.tiles=[];
-    for(let y=0;y<this.full;y++){
-      for(let x=0;x<this.full;x++){
+
+class Board {
+  constructor(size=9) {
+    this.size = size;             // 9
+    this.grid = size + 1;         // 10 (mit Koordinatenrand)
+    this.center = Math.floor((size+1)/2); // 5 (logischer Mittelpunkt 5,5)
+    this.el = document.getElementById('board');
+    this.el.style.setProperty('--board-size', String(size));
+    this.tiles = [];
+
+    // Raster aufbauen: (0..grid) x (0..grid)
+    for (let gy = 0; gy <= this.size; gy++) {
+      for (let gx = 0; gx <= this.size; gx++) {
         let t;
-        if(x===0 && y===0){t=new Tile(x,y,false,true,"");}
-        else if(y===0 && x>0){t=new Tile(x,y,false,true,String.fromCharCode(64+x));}
-        else if(x===0 && y>0){t=new Tile(x,y,false,true,String(this.size-(y-1))); }
-        else{
-          t=new Tile(x,y,x-1===this.center&&y-1===this.center,false);
+        if (gx === 0 && gy === 0) {
+          t = new Tile(gx, gy, false, true, "", "");
+        } else if (gy === 0 && gx > 0) {
+          // Top-Koordinaten (Buchstaben), an Unterkante ausgerichtet
+          const label = String.fromCharCode(64 + gx); // A..I
+          t = new Tile(gx, gy, false, true, label, "top");
+        } else if (gx === 0 && gy > 0) {
+          // Linke Koordinaten (Zahlen, 9..1), an rechter Kante ausgerichtet
+          const label = String(this.size - gy + 1); // 9..1
+          t = new Tile(gx, gy, false, true, label, "left");
+        } else {
+          // echtes Spielfeld: logische Koordinaten = gx, gy (1..9)
+          const isCenter = (gx === this.center && gy === this.center);
+          t = new Tile(gx, gy, isCenter, false);
+          // Klick zum Säulen-Toggle (nur echte Tiles, kein Zentrum)
+          if (!isCenter) {
+            t.el.addEventListener('click', () => {
+              if (t.el.querySelector('.santaPiece')) return;
+              t.el.classList.toggle('pillar');
+              // (Markerklasse behalten, falls du später Säulenlogik ergänzt)
+            });
+          }
         }
         this.el.appendChild(t.el);
         this.tiles.push(t);
       }
     }
+    // (legacy) Koordinaten-Overlay-Funktion beibehalten
+    this.addCoords();
   }
-  getTile(x,y){return this.tiles.find(t=>t.x===x&&t.y===y);}
-  neighborCoords(x,y){
-    const n=[];
-    for(let dy=-1;dy<=1;dy++){
-      for(let dx=-1;dx<=1;dx++){
-        if(dx===0&&dy===0)continue;
-        const tx=x+dx,ty=y+dy;
-        if(tx>0&&tx<=this.size&&ty>0&&ty<=this.size)n.push([tx,ty]);
+
+  // Legacy-Funktion: bleibt bestehen, macht aber nichts Sichtbares (Koordinaten kommen jetzt als Rand-Tiles)
+  addCoords(){
+    /* absichtlich leer gelassen, um die Funktion nicht zu entfernen */
+  }
+
+  getTile(x, y) {
+    // x,y sind logische 1..size
+    return this.tiles.find(t => !t.isCoord && t.x === x && t.y === y);
+  }
+
+  neighborCoords(x, y) {
+    const n = [];
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx === 0 && dy === 0) continue;
+        const tx = x + dx, ty = y + dy;
+        if (tx >= 1 && tx <= this.size && ty >= 1 && ty <= this.size) n.push([tx,ty]);
       }
     }
     return n;
   }
-  hasNeighborPiece(x,y){
-    return this.neighborCoords(x,y).some(([nx,ny])=>{
-      const tile=this.getTile(nx,ny);
-      return tile.el.querySelector(".santaPiece");
+
+  hasNeighborPiece(x, y) {
+    return this.neighborCoords(x, y).some(([nx, ny]) => {
+      const tile = this.getTile(nx, ny);
+      return tile && tile.el.querySelector('.santaPiece');
     });
   }
 }
-function typeWriter(el,text,speed=25){el.textContent="";el.style.opacity="1";let i=0;(function t(){if(i<text.length){el.textContent+=text[i++];setTimeout(t,speed);}})();}
-function speakSanta(t){typeWriter(document.getElementById("speechBubble"),t,20);}
-function createSnowflakes(c,n=40){for(let i=0;i<n;i++){const f=document.createElement("div");f.classList.add("snowflake");const s=Math.random()*4+2;f.style.width=`${s}px`;f.style.height=`${s}px`;f.style.left=`${Math.random()*100}%`;f.style.animationDuration=`${5+Math.random()*5}s`;f.style.animationDelay=`${Math.random()*5}s`;c.appendChild(f);f.addEventListener("animationend",()=>{c.removeChild(f);createSnowflakes(c,1);});}}
-function enableDragAndTouch(piece,board){
-  let currentTile=null;
-  function place(tile){
-    if(!tile||tile.classList.contains("center")||tile.classList.contains("coord")){
-      speakSanta("Dieses Feld ist ungültig! 🔥");return;
-    }
-    const x=parseInt(tile.dataset.x),y=parseInt(tile.dataset.y);
-    if(piece.id==="guard" && y!==board.size){
-      speakSanta("Der Guard darf nur in deiner ersten Reihe platziert werden! ❄️");return;
-    }
-    if(piece.id==="king" && board.hasNeighborPiece(x,y)){
-      speakSanta("Der König braucht Raum – keine Nachbarn erlaubt! 👑");return;
-    }
-    if(tile.querySelector(".santaPiece")){
-      speakSanta("Dieses Feld ist besetzt! ⚠️");return;
-    }
-    tile.appendChild(piece);
-    piece.style.position="absolute";
-    piece.style.inset="0";
-    piece.style.transform="rotateX(var(--tilt-end)) scale(1)";
-    piece.style.borderRadius="8px";
-    piece.dataset.x=x;piece.dataset.y=y;
-    speakSanta("Gut gemacht!");
-    piece.placed=true;
-    checkBothPlaced();
+
+/* ===== Hilfen ===== */
+function typeWriter(el, text, speed=25){
+  const shortText = text.length>280 ? text.slice(0,270)+'…' : text;
+  el.textContent=''; el.style.opacity='1'; let i=0;
+  (function tick(){ if(i<shortText.length){ el.textContent+=shortText[i++]; setTimeout(tick, speed);} })();
+}
+function speakSanta(text){ typeWriter(document.getElementById('speechBubble'), text, 20); }
+function createSnowflakes(c, n=40){
+  for(let i=0;i<n;i++){
+    const f=document.createElement('div'); f.classList.add('snowflake');
+    const s=Math.random()*4+2; f.style.width=`${s}px`; f.style.height=`${s}px`;
+    f.style.left=`${Math.random()*100}%`; f.style.animationDuration=`${5+Math.random()*5}s`;
+    f.style.animationDelay=`${Math.random()*5}s`; c.appendChild(f);
+    f.addEventListener('animationend',()=>{ c.removeChild(f); createSnowflakes(c,1); });
   }
-  // desktop
-  piece.addEventListener("dragstart",e=>{e.dataTransfer.setData("piece",piece.id);piece.style.opacity="0.6";});
-  piece.addEventListener("dragend",()=>piece.style.opacity="1");
-  document.querySelectorAll(".tile").forEach(t=>{
-    t.dataset.x=t.x;t.dataset.y=t.y;
-    t.addEventListener("dragover",e=>e.preventDefault());
-    t.addEventListener("drop",e=>{
-      const pid=e.dataTransfer.getData("piece");
-      if(pid===piece.id)place(t);
+}
+
+/* ===== Drag & Touch (beide Eingaben) ===== */
+function enableDragAndTouch(piece, board){
+  let hoverTile = null;
+
+  function placeOnTile(tileEl){
+    if (!tileEl || tileEl.classList.contains('coord') || tileEl.classList.contains('center')) {
+      speakSanta("Dieses Feld ist ungültig! 🔥"); return;
+    }
+    const x = parseInt(tileEl.dataset.x, 10);
+    const y = parseInt(tileEl.dataset.y, 10);
+
+    // Guard-Regel: Spieler nur auf Reihe 9 (unten)
+    if (piece.id === 'guard' && y !== board.size) {
+      speakSanta("Der Guard darf nur in deiner ersten Reihe (Reihe 9) platziert werden! ❄️"); return;
+    }
+
+    // König-Regel: keine Nachbarn (alle Figuren zählen)
+    if (piece.id === 'king' && board.hasNeighborPiece(x, y)) {
+      speakSanta("Der König braucht Raum – keine Nachbarfelder dürfen belegt sein! 👑"); return;
+    }
+
+    // besetzt?
+    if (tileEl.querySelector('.santaPiece')) {
+      speakSanta("Dieses Feld ist bereits besetzt! ⚠️"); return;
+    }
+
+    tileEl.appendChild(piece);
+    piece.classList.add('onboard');
+    piece.dataset.x = x; piece.dataset.y = y;
+    piece.placed = true;
+
+    speakSanta("Figur platziert.");
+    checkBothPlaced(); // prüft, ob Computerzug starten soll
+  }
+
+  // Desktop-Drag&Drop
+  piece.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('piece', piece.id);
+    piece.style.opacity = '0.6';
+  });
+  piece.addEventListener('dragend', e => { piece.style.opacity = '1'; });
+
+  document.querySelectorAll('.tile').forEach(t=>{
+    if (t.classList.contains('coord')) return;
+    t.addEventListener('dragover', e => e.preventDefault());
+    t.addEventListener('drop', e => {
+      const pid = e.dataTransfer.getData('piece');
+      if (pid === piece.id) placeOnTile(t);
     });
   });
-  // touch
-  piece.addEventListener("touchstart",e=>{piece.classList.add("dragging");e.preventDefault();});
-  piece.addEventListener("touchmove",e=>{
-    const touch=e.touches[0];
-    const el=document.elementFromPoint(touch.clientX,touch.clientY);
-    if(el&&el.classList.contains("tile")){
-      if(currentTile&&currentTile!==el)currentTile.classList.remove("highlight");
-      currentTile=el;el.classList.add("highlight");
+
+  // Touch
+  piece.addEventListener('touchstart', e => {
+    piece.classList.add('dragging');
+    e.preventDefault();
+  }, {passive:false});
+
+  piece.addEventListener('touchmove', e => {
+    const touch = e.touches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const tile = el?.closest?.('.tile');
+    if (tile && !tile.classList.contains('coord')) {
+      if (hoverTile && hoverTile !== tile) hoverTile.classList.remove('highlight');
+      hoverTile = tile;
+      tile.classList.add('highlight');
     }
-  });
-  piece.addEventListener("touchend",()=>{
-    if(currentTile){currentTile.classList.remove("highlight");place(currentTile);currentTile=null;}
-    piece.classList.remove("dragging");
+  }, {passive:true});
+
+  piece.addEventListener('touchend', () => {
+    if (hoverTile) {
+      hoverTile.classList.remove('highlight');
+      placeOnTile(hoverTile);
+      hoverTile = null;
+    }
+    piece.classList.remove('dragging');
   });
 }
+
+/* ===== Spiel-Flow ===== */
 function computerTurn(board){
-  const enemyKing=document.createElement("div");
-  enemyKing.className="santaPiece king enemy";enemyKing.textContent="👑";
-  const enemyGuard=document.createElement("div");
-  enemyGuard.className="santaPiece guard enemy";enemyGuard.textContent="🛡️";
-  // platzieren: guard in oberster reihe, king zufällig aber keine nachbarn
-  const guardTile=board.getTile(1+Math.floor(Math.random()*board.size),1);
-  guardTile.el.appendChild(enemyGuard);
-  enemyGuard.style.position="absolute";enemyGuard.style.inset="0";enemyGuard.style.transform="rotateX(var(--tilt-end))";
-  let placed=false;
-  while(!placed){
-    const x=1+Math.floor(Math.random()*board.size);
-    const y=2; // zweite Reihe
-    if(!board.hasNeighborPiece(x,y)){
-      const tile=board.getTile(x,y);
-      if(tile&&!tile.el.querySelector(".santaPiece")){
-        tile.el.appendChild(enemyKing);
-        enemyKing.style.position="absolute";enemyKing.style.inset="0";enemyKing.style.transform="rotateX(var(--tilt-end))";
-        placed=true;
+  // Computer-Figuren
+  const cGuard = document.createElement('div');
+  cGuard.className = 'santaPiece guard enemy onboard';
+  cGuard.textContent = '🛡️';
+
+  const cKing = document.createElement('div');
+  cKing.className = 'santaPiece king enemy onboard';
+  cKing.textContent = '👑';
+
+  // Guard: Reihe 1 (oben), wähle freie Spalte
+  const freeColsTop = [];
+  for (let x=1;x<=board.size;x++){
+    const t = board.getTile(x,1);
+    if (t && !t.el.querySelector('.santaPiece')) freeColsTop.push(x);
+  }
+  if (freeColsTop.length === 0) { speakSanta("Der Computer findet keinen Platz für seinen Guard."); return; }
+  const gx = freeColsTop[Math.floor(Math.random()*freeColsTop.length)];
+  const gTile = board.getTile(gx,1);
+  gTile.el.appendChild(cGuard);
+
+  // König: auf seiner Seite mit Nachbarfreiheits-Regel – starte bevorzugt in Reihe 2
+  const candidateRows = [2,3,1]; // leichte Präferenz nahe Startreihe
+  let placed = false;
+  for (const ry of candidateRows){
+    const cols = [...Array(board.size)].map((_,i)=>i+1).sort(()=>Math.random()-0.5);
+    for (const cx of cols){
+      const tile = board.getTile(cx, ry);
+      if (tile && !tile.el.querySelector('.santaPiece') && !board.hasNeighborPiece(cx, ry)) {
+        tile.el.appendChild(cKing);
+        placed = true; break;
+      }
+    }
+    if (placed) break;
+  }
+  if (!placed) {
+    // Fallback irgendwo oben, Regel so gut wie möglich einhalten
+    outer: for (let y=1; y<=3; y++){
+      for (let x=1; x<=board.size; x++){
+        const tile = board.getTile(x,y);
+        if (tile && !tile.el.querySelector('.santaPiece')) {
+          if (!board.hasNeighborPiece(x,y)) {
+            tile.el.appendChild(cKing); placed = true; break outer;
+          }
+        }
       }
     }
   }
   speakSanta("Santa Frost hat seine Figuren platziert! 🎅");
 }
+
 function checkBothPlaced(){
-  const k=document.getElementById("king"),g=document.getElementById("guard");
-  if(k.placed&&g.placed) setTimeout(()=>computerTurn(window.gameBoard),1500);
+  const king = document.getElementById('king');
+  const guard = document.getElementById('guard');
+  if (king.placed && guard.placed) {
+    setTimeout(()=>computerTurn(window.gameBoard), 900);
+  }
 }
-document.addEventListener("DOMContentLoaded",()=>{
-  const b=document.getElementById("speechBubble");
-  const king=document.getElementById("king"),guard=document.getElementById("guard");
-  window.gameBoard=new Board(9);
-  const t1="Willkommen, Sterblicher. Die Mitternacht ist still, und der Schnee tanzt … 🎅";
-  const t2="Platziere den König und den Guard auf dem Spielfeld. Der König darf überall stehen (aber nicht neben anderen!), der Guard nur in deiner ersten Reihe. 👑🛡️";
-  b.textContent="";
-  document.getElementById("board").addEventListener("animationend",()=>{
-    typeWriter(b,t1,30);
+
+/* ===== Start ===== */
+document.addEventListener('DOMContentLoaded', ()=>{
+  // Board anlegen
+  window.gameBoard = new Board(9);
+
+  // Intro-Texte
+  const b = document.getElementById('speechBubble');
+  const t1 = "Willkommen, Sterblicher. Die Mitternacht ist still, und der Schnee tanzt … 🎅";
+  const t2 = "Platziere den König und den Guard auf dem Spielfeld. König: keine Nachbarn! Guard: nur in deiner ersten Reihe (Reihe 9). 👑🛡️";
+  b.textContent='';
+  document.getElementById('board').addEventListener('animationend', ()=>{
+    typeWriter(b,t1,28);
     setTimeout(()=>{
-      king.classList.add("show");guard.classList.add("show");
-      setTimeout(()=>typeWriter(b,t2,25),1800);
-    },6000);
-  },{once:true});
-  createSnowflakes(document.getElementById("snow"));
-  enableDragAndTouch(king,window.gameBoard);
-  enableDragAndTouch(guard,window.gameBoard);
+      document.getElementById('king').classList.add('show');
+      document.getElementById('guard').classList.add('show');
+      setTimeout(()=>typeWriter(b,t2,22),1600);
+    }, 5200);
+  }, {once:true});
+
+  // Schnee
+  createSnowflakes(document.getElementById('snow'));
+
+  // DnD+Touch für beide Figuren
+  enableDragAndTouch(document.getElementById('king'), window.gameBoard);
+  enableDragAndTouch(document.getElementById('guard'), window.gameBoard);
+
+  // Desktop-Highlight bei Dragenter/Leave (beibehalten)
+  document.querySelectorAll('.tile').forEach(t=>{
+    if (t.classList.contains('coord')) return;
+    t.addEventListener('dragenter', e=>{
+      e.preventDefault();
+      t.classList.add('highlight');
+    });
+    t.addEventListener('dragleave', ()=> t.classList.remove('highlight'));
+  });
 });
 </script>
 </body>
