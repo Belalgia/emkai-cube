@@ -95,21 +95,17 @@ body {
 .santaPiece.show{opacity:1;transform:scale(1);transition:opacity 1.5s ease,transform 1.5s ease;}
 
 .board3d {
-  width: min(70vmin, 90vw);
+  width: 96vw;               /* fast volle Bildschirmbreite */
+  max-width: 600px;          /* optional, damit es auf Tablets nicht zu groß wird */
   aspect-ratio: 1 / 1;
   perspective: 1200px;
   display: flex;
   align-items: center;
   justify-content: center;
-
-  /* Direkt unter Santa */
-  margin-top: 0.5;
-  margin-bottom: 0;
+  margin: 0 auto;
   position: relative;
   top: 0;
-
-  /* Damit alles reinpasst */
-  max-height: 55vh;
+  max-height: 60vh;
 }
 
 @media (max-height: 850px) {
@@ -260,112 +256,185 @@ body {
 
 <script>
 class Tile {
-  constructor(x,y,isCenter=false){
-    this.x=x;this.y=y;this.isCenter=isCenter;
-    this.el=document.createElement('div');
-    this.el.className='tile';
-    if(isCenter)this.el.classList.add('center');
+  constructor(x, y, isCenter = false) {
+    this.x = x;
+    this.y = y;
+    this.isCenter = isCenter;
+    this.el = document.createElement("div");
+    this.el.className = "tile";
+    if (isCenter) this.el.classList.add("center");
   }
 }
-class Board{
-  constructor(size=9){
-    this.size=size;this.center=Math.floor(size/2);
-    this.el=document.getElementById('board');
-    this.el.style.setProperty('--board-size',String(size));
-    for(let y=0;y<size;y++){
-      for(let x=0;x<size;x++){
-        const t=new Tile(x,y,x===this.center&&y===this.center);
+
+class Board {
+  constructor(size = 9) {
+    this.size = size;
+    this.center = Math.floor(size / 2);
+    this.el = document.getElementById("board");
+    this.el.style.setProperty("--board-size", String(size));
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const t = new Tile(x, y, x === this.center && y === this.center);
         this.el.appendChild(t.el);
-        t.el.dataset.x=x;t.el.dataset.y=y;
-        if(!t.isCenter){
-          t.el.addEventListener('click',()=>{
-            if(t.el.querySelector('.santaPiece')) return;
-            t.el.classList.toggle('pillar');
+        t.el.dataset.x = x;
+        t.el.dataset.y = y;
+        if (!t.isCenter) {
+          t.el.addEventListener("click", () => {
+            if (t.el.querySelector(".santaPiece")) return;
+            t.el.classList.toggle("pillar");
           });
         }
-        t.el.addEventListener('dragenter',e=>{
-          e.preventDefault();
-          if(!t.isCenter)t.el.classList.add('highlight');
-        });
-        t.el.addEventListener('dragleave',()=>t.el.classList.remove('highlight'));
-        t.el.addEventListener('dragover',e=>e.preventDefault());
-        t.el.addEventListener('drop',e=>{
-          t.el.classList.remove('highlight');
-          if(t.isCenter){speakSanta("Das Zentrum ist heilig – hier darf nichts platziert werden! 🔥");return;}
-          const pieceId=e.dataTransfer.getData('piece');
-          if(!pieceId)return;
-          const piece=document.getElementById(pieceId);
-          const yPos=parseInt(t.el.dataset.y);
-          if(pieceId==='guard' && yPos!==0){speakSanta("Der Guard darf nur in deiner ersten Reihe platziert werden! ❄️");return;}
-          if(t.el.querySelector('.santaPiece')){speakSanta("Dieses Feld ist bereits besetzt! ⚠️");return;}
-          t.el.appendChild(piece);
-          piece.style.position='absolute';
-          piece.style.top='10%';
-          piece.style.left='10%';
-          piece.style.transform='scale(0.8)';
-          speakSanta("Gut gemacht! Jetzt bist du bereit für das nächste Kapitel ... 🎄");
-        });
       }
     }
     this.addCoords();
   }
-  addCoords(){
-    const c=document.getElementById('coords');
-    const s=this.size;
-    for(let x=0;x<s;x++){
-      const col=document.createElement('div');
-      col.className='coord-col';
-      col.style.setProperty('--index',x);
-      col.textContent=String.fromCharCode(65+x);
+  addCoords() {
+    const c = document.getElementById("coords");
+    const s = this.size;
+    for (let x = 0; x < s; x++) {
+      const col = document.createElement("div");
+      col.className = "coord-col";
+      col.style.setProperty("--index", x);
+      col.textContent = String.fromCharCode(65 + x);
       c.appendChild(col);
     }
-    for(let y=0;y<s;y++){
-      const row=document.createElement('div');
-      row.className='coord-row';
-      row.style.setProperty('--index',y);
-      row.textContent=s-y;
+    for (let y = 0; y < s; y++) {
+      const row = document.createElement("div");
+      row.className = "coord-row";
+      row.style.setProperty("--index", y);
+      row.textContent = s - y;
       c.appendChild(row);
     }
   }
 }
 
-function typeWriter(el,text,speed=25){
-  const shortText=text.length>160?text.slice(0,150)+'…':text;
-  el.textContent='';el.style.opacity='1';let i=0;
-  (function tick(){if(i<shortText.length){el.textContent+=shortText[i++];setTimeout(tick,speed);} })();
+function typeWriter(el, text, speed = 25) {
+  const shortText = text.length > 160 ? text.slice(0, 150) + "…" : text;
+  el.textContent = "";
+  el.style.opacity = "1";
+  let i = 0;
+  (function tick() {
+    if (i < shortText.length) {
+      el.textContent += shortText[i++];
+      setTimeout(tick, speed);
+    }
+  })();
 }
-function speakSanta(text){typeWriter(document.getElementById('speechBubble'),text,20);}
-function createSnowflakes(c,n=40){
-  for(let i=0;i<n;i++){
-    const f=document.createElement('div');f.classList.add('snowflake');
-    const s=Math.random()*4+2;f.style.width=`${s}px`;f.style.height=`${s}px`;
-    f.style.left=`${Math.random()*100}%`;f.style.animationDuration=`${5+Math.random()*5}s`;f.style.animationDelay=`${Math.random()*5}s`;
+function speakSanta(text) {
+  typeWriter(document.getElementById("speechBubble"), text, 20);
+}
+
+function createSnowflakes(c, n = 40) {
+  for (let i = 0; i < n; i++) {
+    const f = document.createElement("div");
+    f.classList.add("snowflake");
+    const s = Math.random() * 4 + 2;
+    f.style.width = `${s}px`;
+    f.style.height = `${s}px`;
+    f.style.left = `${Math.random() * 100}%`;
+    f.style.animationDuration = `${5 + Math.random() * 5}s`;
+    f.style.animationDelay = `${Math.random() * 5}s`;
     c.appendChild(f);
-    f.addEventListener('animationend',()=>{c.removeChild(f);createSnowflakes(c,1);});
+    f.addEventListener("animationend", () => {
+      c.removeChild(f);
+      createSnowflakes(c, 1);
+    });
   }
 }
-document.addEventListener('DOMContentLoaded',()=>{
-  new Board(9);
-  const b=document.getElementById('speechBubble');
-  const king=document.getElementById('king');
-  const guard=document.getElementById('guard');
-  const t1=b.textContent.trim();
-  b.textContent='';
-  const t2="Platziere den König und den Guard auf dem Spielfeld. Der König darf überall stehen, der Guard nur in deiner ersten Reihe. 👑🛡️";
-  document.getElementById('board').addEventListener('animationend',()=>{
-    typeWriter(b,t1,30);
-    setTimeout(()=>{
-      king.classList.add('show');
-      guard.classList.add('show');
-      setTimeout(()=>{typeWriter(b,t2,25);},1800);
-    },6000);
-  },{once:true});
-  createSnowflakes(document.getElementById('snow'));
-  document.querySelectorAll('.santaPiece').forEach(p=>{
-    p.addEventListener('dragstart',e=>{e.dataTransfer.setData('piece',p.id);e.target.style.opacity='0.6';});
-    p.addEventListener('dragend',e=>{e.target.style.opacity='1';});
+
+// === TOUCH + MOUSE DRAG SYSTEM ===
+function enableDragAndTouch(piece) {
+  let currentTile = null;
+
+  function placeOnTile(tile) {
+    if (!tile || tile.classList.contains("center")) {
+      speakSanta("Das Zentrum ist heilig – hier darf nichts platziert werden! 🔥");
+      return;
+    }
+    const yPos = parseInt(tile.dataset.y);
+    if (piece.id === "guard" && yPos !== 0) {
+      speakSanta("Der Guard darf nur in deiner ersten Reihe platziert werden! ❄️");
+      return;
+    }
+    if (tile.querySelector(".santaPiece")) {
+      speakSanta("Dieses Feld ist bereits besetzt! ⚠️");
+      return;
+    }
+    tile.appendChild(piece);
+    piece.style.position = "absolute";
+    piece.style.top = "10%";
+    piece.style.left = "10%";
+    piece.style.transform = "scale(0.8)";
+    speakSanta("Gut gemacht! Jetzt bist du bereit für das nächste Kapitel ... 🎄");
+  }
+
+  // Desktop Drag&Drop
+  piece.addEventListener("dragstart", (e) => {
+    e.dataTransfer.setData("piece", piece.id);
+    e.target.style.opacity = "0.6";
   });
+  piece.addEventListener("dragend", (e) => {
+    e.target.style.opacity = "1";
+  });
+
+  // Touch Support
+  piece.addEventListener("touchstart", (e) => {
+    piece.classList.add("dragging");
+    e.preventDefault();
+  });
+
+  piece.addEventListener("touchmove", (e) => {
+    const touch = e.touches[0];
+    const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (elem && elem.classList.contains("tile")) {
+      if (currentTile && currentTile !== elem)
+        currentTile.classList.remove("highlight");
+      currentTile = elem;
+      elem.classList.add("highlight");
+    }
+  });
+
+  piece.addEventListener("touchend", (e) => {
+    if (currentTile) {
+      currentTile.classList.remove("highlight");
+      placeOnTile(currentTile);
+      currentTile = null;
+    }
+    piece.classList.remove("dragging");
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  new Board(9);
+  const b = document.getElementById("speechBubble");
+  const king = document.getElementById("king");
+  const guard = document.getElementById("guard");
+  const t1 = "Willkommen, Sterblicher. Die Mitternacht ist still, und der Schnee tanzt … 🎅";
+  const t2 =
+    "Platziere den König und den Guard auf dem Spielfeld. Der König darf überall stehen, der Guard nur in deiner ersten Reihe. 👑🛡️";
+
+  b.textContent = "";
+
+  document.getElementById("board").addEventListener(
+    "animationend",
+    () => {
+      typeWriter(b, t1, 30);
+      setTimeout(() => {
+        king.classList.add("show");
+        guard.classList.add("show");
+        setTimeout(() => {
+          typeWriter(b, t2, 25);
+        }, 1800);
+      }, 6000);
+    },
+    { once: true }
+  );
+
+  createSnowflakes(document.getElementById("snow"));
+  enableDragAndTouch(king);
+  enableDragAndTouch(guard);
 });
 </script>
+
 </body>
 </html>
